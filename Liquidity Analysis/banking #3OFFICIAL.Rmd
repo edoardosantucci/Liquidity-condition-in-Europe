@@ -1,0 +1,411 @@
+---
+title: 'banking #3'
+output: html_document
+date: "2023-05-06"
+---
+
+```{r setup, include=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(reshape2)
+library(corrplot)
+```
+
+
+```{r}
+d <- read_excel("C:/Users/Lenovo/Downloads/data-2.xlsx", sheet = 2)
+head(d)
+
+n <- nrow(d)
+for (i in n:1){
+  if (d[i, 3] == "Greece"){
+    d <- d[-i,]
+  }
+  if (d[i, 3] == "Luxembourg"){
+    d <- d[-i,]
+  }
+  if (d[i, 3] == "Portugal"){
+    d <- d[-i,]
+  }
+  if (d[i, 3] == "Ireland"){
+    d <- d[-i,]
+  }
+  if (d[i, 3] == "Finland"){
+    d <- d[-i,]
+  }
+}
+```
+
+
+```{r}
+#LCR dataset
+d_lcr <- d[c(19:15)] 
+d_lcr$Company_name <- d$`Company name Latin alphabet`
+d_lcr$Country <- d$Country
+d_lcr <- na.omit(d_lcr)
+
+
+colnames(d_lcr) <- c("LCR_2018", "LCR_2019", "LCR_2020", "LCR_2021", "LCR_2022", "Bank_names", "Country")
+
+```
+
+
+```{r}
+d_lcr_year <- d_lcr %>%
+  pivot_longer(cols = starts_with("LCR"), names_to = "year", values_to = "LCR_ratio") %>%
+  group_by(Country, year) %>%
+  summarize(mean_LCR = mean(LCR_ratio))
+
+
+LCR_plot <- ggplot(d_lcr_year, aes(x = year, y = mean_LCR, color = Country, group = Country)) +
+  geom_line(size = 1.2) +
+  xlab("Year") + ylab("Mean LCR Ratio") +
+  ggtitle("Average LCR Ratio over Country and Year") + 
+  theme_minimal() + 
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  theme(panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.5),
+        panel.grid.major = element_line(size = 0.4, colour = "grey"),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(1, "cm"))
+print(LCR_plot)
+```
+
+To have a better visualization of how the LCR evolved in the different countries we used a bar plot. By this graph we can assess for sure that each country over the 5 years respected the requirement settled for 100%. The countries that better performed were France, Germany and Spain. While the worst performers were Austria, Belgium. To better understand the reason of this performance we can proceed by another type of analysis which inspects different factors of each countries that could have lead to these results. 
+
+```{r}
+d_lcr_1 <- aggregate(d_lcr, by = list(d_lcr$Country), FUN = mean)
+d_lcr_1 <- d_lcr_1[-c(7:8)]
+
+colnames(d_lcr_1)[which(names(d_lcr_1) == "Group.1")] <- "Country"
+
+df_longLcr <- gather(d_lcr_1, key = "Variabile", value = "Valore", -Country)
+lcr_plot <- ggplot(df_longLcr, aes(x = Country, y = Valore, fill = Variabile)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7, color = "black") +
+  scale_fill_manual(values = c("red", "orange", "yellow", "magenta", "gold"))+
+  geom_hline(yintercept = 100, linetype = "dashed", color = "black", size = 1.2)+
+  labs(title = "LCR Rate Over Years",
+       x = "Country",
+       y = "LCR Rate") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(0.5, "cm"),
+        panel.grid.major = element_line(size = 1),
+        panel.grid.minor = element_line(size = 0.5),
+        panel.border = element_rect(size = 1, fill = NA))
+print(lcr_plot)
+
+```
+
+```{r}
+d_nsfr <- d[c(24:20)] 
+d_nsfr$Company_name <- d$`Company name Latin alphabet`
+d_nsfr$Country <- d$Country
+d_nsfr <- na.omit(d_nsfr)
+
+colnames(d_nsfr) <- c("NSFR_2018", "NSFR_2019", "NSFR_2020", "NSFR_2021", "NSFR_2022", "Bank_names", "Country")
+
+d_nsfr_year <- d_nsfr %>%
+  pivot_longer(cols = starts_with("NSFR"), names_to = "year", values_to = "NSFR_ratio") %>%
+  group_by(Country, year) %>%
+  summarize(mean_NSFR = mean(NSFR_ratio))
+
+NSFR_plot <- ggplot(d_nsfr_year, aes(x = year, y = mean_NSFR, color = Country, group = Country)) +
+  geom_line(size = 1.2) +
+  xlab("Year") + ylab("Mean NSFR") +
+  ggtitle("Average NSFR over Country and Year") + 
+  theme_minimal() + 
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  theme(panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.5),
+        panel.grid.major = element_line(size = 0.4, colour = "grey"),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(1, "cm"))
+print(NSFR_plot)
+```
+
+```{r}
+d_nsfr_1 <- aggregate(d_nsfr, by = list(d_nsfr$Country), FUN =  mean)
+d_nsfr_1 <- d_nsfr_1[,-c(7:8)]
+colnames(d_nsfr_1)[which(names(d_nsfr_1) == "Group.1")] <- "Country"
+
+df_long <- gather(d_nsfr_1, key = "Variabile", value = "Valore", -Country)
+
+nsfr_plot <- ggplot(df_long, aes(x = Country, y = Valore, fill = Variabile)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7, color = "black") +
+  scale_fill_manual(values = c("red", "orange", "yellow", "magenta", "gold"))+
+  geom_hline(yintercept = 100, linetype = "dashed", color = "black", size = 1.2)+
+  labs(title = "NSFR Rate Over Years",
+       x = "Country",
+       y = "NSFR rate") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(0.5, "cm"),
+        panel.grid.major = element_line(size = 1),
+        panel.grid.minor = element_line(size = 0.5),
+        panel.border = element_rect(size = 1, fill = NA))
+print(nsfr_plot)
+```
+
+The introduction of these two requirements changed the daily way of managing money for banks, our analysis decided to move in order to catch these transformations. specifically, we expect the LCR to have changed the liquidity take-up. In order to measure the liquidity take-up we introduced the Loan-to-Deposit Ratio (LDR) computed by net loans divided by borrowings and deposits. Indeed we expect a negative relation between these two. 
+
+```{r}
+d_ldr <- d[c(29:25)]
+d_ldr$Country <- d$Country
+d_ldr <- na.omit(d_ldr)
+
+colnames(d_ldr) <- c("LDR_2018", "LDR_2019", "LDR_2020", "LDR_2021", "LDR_2022", "Country")
+
+d_ldr_year <- d_ldr %>%
+  pivot_longer(cols = starts_with("LDR"), names_to = "year", values_to = "LDR_ratio") %>%
+  group_by(Country, year) %>%
+  summarize(mean_LDR = mean(LDR_ratio))
+
+LDR_plot <- ggplot(d_ldr_year, aes(x = year, y = mean_LDR, color = Country, group = Country)) +
+   geom_line(size = 1.2) +
+   xlab("Years") + ylab("Mean LDR") +
+   ggtitle("Average LDR by Country and Year") + 
+   theme_minimal() + 
+   theme(legend.position = "bottom") +
+   scale_y_continuous(labels = function(x) paste0(x, "%")) +
+   theme(panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.5),
+        panel.grid.major = element_line(size = 0.4, colour = "grey"),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(1, "cm"))
+print(LDR_plot)
+```
+
+the NSFR is expected to impact the bank's loan portfolio defining a shift from long-term (more than 1 year) to short term (less than year) loans. This helps banks to satisfy the NSFR since the former have a 65 % weight in the calculation of the amount of required stable funding while the latter has a weight of only 50%. This potential shift of liquidity risk from banks to NFCs is undesirable since banks are better able to bear such risks.
+
+```{r}
+d_short_long <- d[,c(14:5)]
+d_short_long <- na.omit(d_short_long)
+
+means <- c()
+for (i in 1:10){
+  x <- colMeans(d_short_long[,i]) 
+  means <- c(means, x)
+}
+d_short_long <- rbind(d_short_long, means)
+
+colnames(d_short_long) <- c("STF_2018", "STF_2019", "STF_2020", "STF_2021", "STF_2022" ,"LTF_2018", "LTF_2019", "LTF_2020", "LTF_2021", "LTF_2022")
+
+d_year <- data.frame(mean = t(d_short_long[260,]), funding_type = c(rep("Short Term Funding", 5), rep("Long Term Funding", 5)), year = rep(c(2018:2022)))
+
+
+plot_short_long <- ggplot(d_year, aes(x = year, y = mean, fill = funding_type)) +
+  geom_col(position = "dodge", width = 0.4, color = "black", size = 1) +
+  scale_fill_manual(values = c("blue", "lightblue")) +
+  labs(x = "Year", y = "Funding", fill = "") +
+  theme_classic() +
+  theme(
+    panel.grid.major = element_line(color = "gray", linetype = "dashed"),
+    panel.grid.minor = element_blank()
+  )
+print(plot_short_long)
+```
+
+```{r}
+d_short <- d[,c(14:10)]
+d_short$Country <- d$Country
+d_short <- na.omit(d_short)
+colnames(d_short) <- c("STF_2018", "STF_2019", "STF_2020", "STF_2021", "STF_2022", "Country")
+
+d_short_year <- d_short %>%
+  pivot_longer(cols = starts_with("STF"), names_to = "year", values_to = "Short_term_funding") %>%
+  group_by(Country, year) %>%
+  summarize(mean_STF = mean(Short_term_funding))
+
+STF_plot <- ggplot(d_short_year, aes(x = year, y = mean_STF, color = Country, group = Country)) +
+  geom_line() +
+  xlab("Year") + ylab("Mean STF") +
+  ggtitle("Mean STF by Country and Year") + 
+  theme_minimal() + 
+  theme(legend.position = "bottom")
+print(STF_plot)
+```
+
+
+
+```{r}
+d1 <- d[c(24:15)]
+d1 = na.omit(d1)
+matrice = cor(d1[,1:5],d1[,6:10])
+
+df_correlazione <- melt(matrice)
+ggplot(df_correlazione, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "black") +
+  scale_fill_gradient2(low = "lightblue", mid = "white", high = "darkblue",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlazione") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Matrice di correlazione", x = "", y = "")
+
+
+```
+
+```{r}
+weighted_avg_nsfr <- apply(d_nsfr[, 1:5], 2, function(x) weighted.mean(x))
+d_lcr <- na.omit(d_lcr)
+weighted_avg_lcr <- apply(d_lcr[, 1:5], 2, function(x) weighted.mean(x))
+years <- c(2018:2022)
+years = data.frame(years, weighted_avg_nsfr, weighted_avg_lcr)
+
+
+agg_plot <- ggplot(data = years) + 
+  geom_line(aes(x = years, y = weighted_avg_lcr, color = "Weighted average LCR"), size = 1.2) +
+  geom_line(aes(x = years, y = weighted_avg_nsfr, color = "Weighted average NSFR"), size = 1.2)+
+  labs(x = "Years", y = "Weighted average NSFR and LCR ratio" , color = "Ratio") +
+  labs(title = "Weighted average NSFR and LCR ratio by Years") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  theme(panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.5),
+        panel.grid.major = element_line(size = 0.4, colour = "grey"),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        legend.key.size = unit(1, "cm"))
+print(agg_plot)
+```
+
+```{r}
+d1 <- d[c(24:15)]
+d1 = na.omit(d1)
+colnames(d1) <- c("NSFR_2018", "NSFR_2019", "NSFR_2020", "NSFR_2021",
+                  "NSFR_2022", "LCR_2018", "LCR_2019", "LCR_2020",
+                  "LCR_2021", "LCR_2022")
+
+df_corr <- d1 %>%
+  pivot_longer(cols = everything(), names_to = c(".value", "year"), names_sep = "_")
+
+year_data1 <- df_corr %>% filter(year == "2018")
+
+plot1 <- ggplot(year_data1, aes(x = NSFR, y = LCR)) +
+  geom_point(color = "#1f77b4", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "#d62728", linetype = 1) +
+  labs(title = "LCR and NSFR Relation for 2018",
+       x = "NSFR (%)",
+       y = "LCR (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "none")
+
+year_data2 <- df_corr %>% filter(year == "2019")
+
+plot2 <- ggplot(year_data2, aes(x = NSFR, y = LCR)) +
+  geom_point(color = "#1f77b4", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "#d62728", linetype = 1) +
+  labs(title = "LCR and NSFR Relation for 2019",
+       x = "NSFR (%)",
+       y = "LCR (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "none")
+
+year_data3 <- df_corr %>% filter(year == "2020")
+
+plot3 <- ggplot(year_data3, aes(x = NSFR, y = LCR)) +
+  geom_point(color = "#1f77b4", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "#d62728", linetype = 1) +
+  labs(title = "LCR and NSFR Relation for 2020",
+       x = "NSFR (%)",
+       y = "LCR (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "none")
+
+year_data4 <- df_corr %>% filter(year == "2021")
+
+plot4 <- ggplot(year_data4, aes(x = NSFR, y = LCR)) +
+  geom_point(color = "#1f77b4", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "#d62728", linetype = 1) +
+  labs(title = "LCR and NSFR Relation for 2021",
+       x = "NSFR (%)",
+       y = "LCR (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "none")
+
+year_data5 <- df_corr %>% filter(year == "2022")
+
+plot5 <- ggplot(year_data5, aes(x = NSFR, y = LCR)) +
+  geom_point(color = "#1f77b4", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "#d62728", linetype = 1) +
+  labs(title = "LCR and NSFR Relation for 2022",
+       x = "NSFR (%)",
+       y = "LCR (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "none")
+
+plot <- list(plot1, plot2, plot3, plot3, plot4, plot5)
+print(plot)
+```
+liquid assets / total assets 
+```{r}
+dl <- d[,34:30]
+dl$Country <- d$Country
+dl <- na.omit(dl)
+
+weighted_avg_ratio <- apply(dl[, 1:5], 2, function(x) weighted.mean(x))
+
+data_ratio <- data.frame(cbind(c(2018:2022), weighted_avg_ratio))
+
+slope <- diff(data_ratio$weighted_avg_ratio)
+slope_change_index <- c(1, which(abs(slope) > 0) + 1)
+
+##change of slope function
+change_points <- data_ratio[slope_change_index, ]
+
+plot_ratio <- ggplot(data_ratio, aes(x = V1, y = weighted_avg_ratio)) +
+  geom_smooth(method = "loess", se = FALSE, color = "#E41A1C", size = 1.5) +
+  geom_point(data = change_points, aes(x = V1, y = weighted_avg_ratio), color = "black", size = 3) +
+  labs(title = "Weighted Average Ratio of Liquid Assets to Total Assets",
+       x = "Year",
+       y = "Ratio of Liquid Assets to Total Assets") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.major = element_line(color = "gray80"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "none")
+
+print(plot_ratio)
+```
+```
+
